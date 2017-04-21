@@ -3,7 +3,7 @@ Music Playlist Continuation by Learning from Hand-Curated Examples and Song Feat
 
 This repository contains the implementation of the hybrid playlist continuation model presented in the following submission to the ECML-PKDD 2017 conference:
 
-* Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer and Markus Schedl. “[Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features.](http://www.cp.jku.at/research/papers/Vall_etal_ISMIR_2015.pdf)”
+* Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer and Markus Schedl. “[Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features.](http://www.cp.jku.at/people/vall/vall_etal_ecml-pkdd2017.pdf)” ([supplementary materials](http://www.cp.jku.at/people/vall/vall_etal_ecml-pkdd2017_supplement.pdf))
 
 The submission presents results on the "[AotM-2011](https://bmcfee.github.io/data/aotm2011.html)"  and the "[8tracks](https://8tracks.com/)" datasets, both enriched with song features derived from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/) (MSD).
 
