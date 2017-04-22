@@ -117,7 +117,7 @@ def test(model, test_target, train_target, out_dir, song_obs=None):
     out_dir: string
         Path to the results directory
     song_obs: int
-        Test on songs observed song_obs+ times during training.
+        Test on songs observed song_obs times during training.
     """
 
     print('\nSetting up test...')
@@ -143,7 +143,7 @@ def test(model, test_target, train_target, out_dir, song_obs=None):
     # mask known good continuations from training
     mask_training_targets(test_output, train_target, verbose=True)
 
-    # keep only songs with song_obs+ observations at training time
+    # keep only songs with song_obs observations at training time
     if song_obs is not None:
         occ = np.array(train_target.sum(axis=0)).flatten()
         test_target[:, np.where(occ != song_obs)[0]] = 0
