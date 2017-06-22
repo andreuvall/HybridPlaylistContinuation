@@ -1,19 +1,19 @@
 Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features
 ====================================================================================
 
-This repository contains the implementation of the hybrid playlist continuation model presented in the following submission to the ECML-PKDD 2017 conference:
+This repository contains the implementation of the hybrid playlist continuation model presented in our paper:
 
-* Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer and Markus Schedl. “[Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features.](http://www.cp.jku.at/people/vall/vall_etal_ecml-pkdd2017.pdf)” ([supplementary materials](http://www.cp.jku.at/people/vall/vall_etal_ecml-pkdd2017_supplement.pdf))
+* Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer and Markus Schedl. “[Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features.](https://arxiv.org/pdf/1705.08283.pdf)”
 
-The submission presents results on the "[AotM-2011](https://bmcfee.github.io/data/aotm2011.html)"  and the "[8tracks](https://8tracks.com/)" datasets, both enriched with song features derived from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/) (MSD).
+This paper presents results on the "[AotM-2011](https://bmcfee.github.io/data/aotm2011.html)"  and the "[8tracks](https://8tracks.com/)" datasets, both enriched with song features derived from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/) (MSD).
 
-The "AotM-2011" dataset and the MSD are publicly available. Therefore, we can share the exact playlists and song features used in our experiments ([download the AotM-2011 dataset](http://www.cp.jku.at/datasets/recommendation/data_HybridPlaylistContinuation.zip)). Confer the submission for full details on the data preparation. Also note that we share the already derived features. The contribution of this work does not reside on the feature extraction step, but on the enhanced effect of combining hand-curated music playlists with song features.
+The "AotM-2011" dataset and the MSD are publicly available. Therefore, we can share the exact playlists and song features used in our experiments ([download the AotM-2011 dataset](http://www.cp.jku.at/datasets/recommendation/data_HybridPlaylistContinuation.zip)). The data preparation is described in detail in the paper. Also note that we share the already derived features. The contribution of this work does not reside on the feature extraction step, but on the enhanced effect of combining hand-curated music playlists with song features.
 
  The 8tracks dataset is a private collection given to us for research purposes and we are not allowed to disclose it.
 
 ## Models
 
-The repository contains two main programs: `playlist_hybrid.py` and `playlist_cf.py`. The former implements our hybrid playlist continuation model. The latter is the Collaborative Filtering (CF) baseline used in the submission, based on the weighted matrix factorization algorithm introduced in [Hu et al. 2008](http://yifanhu.net/PUB/cf.pdf) and implemented in the [`implicit`](https://github.com/benfred/implicit) package.
+The repository contains two main programs: `playlist_hybrid.py` and `playlist_cf.py`. The former implements our hybrid playlist continuation model. The latter is the Collaborative Filtering (CF) baseline used in the paper, based on the weighted matrix factorization algorithm introduced in [Hu et al. 2008](http://yifanhu.net/PUB/cf.pdf) and implemented in the [`implicit`](https://github.com/benfred/implicit) package.
 
 ## Basic Usage
 
@@ -22,7 +22,7 @@ The proposed model can be trained using, e.g., song features derived from listen
 python playlist_hybrid.py --config config/hybrid/logs.py --fit
 ```
 
-Once the model is trained the playlist continuations it produces can be evaluated by running:
+Once the model is trained, the playlist continuations it produces can be evaluated by running:
 ```bash
 python playlist_hybrid.py --config config/hybrid/logs.py --test
 ```
