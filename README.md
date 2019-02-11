@@ -1,63 +1,113 @@
-Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features
-====================================================================================
+Hybrid recommender systems for music playlist continuation
+==========================================================
 
-This repository contains the implementation of the hybrid playlist continuation model presented in our paper:
+This repository contains Python implementations of the hybrid recommender systems Profiles and Membership introduced in our paper
 
-* Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer and Markus Schedl. “[Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features.](https://arxiv.org/pdf/1705.08283.pdf)”
+- Andreu Vall, Matthias Dorfer, Hamid Eghbal-zadeh, Markus Schedl, Keki Burjorjee, and Gerhard Widmer. "Feature-Combination Hybrid Recommender Systems for Automated Music Playlist Continuation." User Modeling and User-Adapted Interaction, 2019 (in press).
 
-This paper presents results on the "[AotM-2011](https://bmcfee.github.io/data/aotm2011.html)"  and the "[8tracks](https://8tracks.com/)" datasets, both enriched with song features derived from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/) (MSD).
+_(If you arrived to this repository from another of our papers, please look at the end of this README file.)_
 
-The "AotM-2011" dataset and the MSD are publicly available. Therefore, we can share the exact playlists and song features used in our experiments ([download the AotM-2011 dataset](http://www.cp.jku.at/datasets/recommendation/data_HybridPlaylistContinuation.zip)). The data preparation is described in detail in the paper. Also note that we share the already derived features. The contribution of this work does not reside on the feature extraction step, but on the enhanced effect of combining hand-curated music playlists with song features.
+The repository also implements the baselines MF, Hybrid MF, Neighbors, Artists, CAGH, Popularity and Random (we use the terminology of the paper).
 
- The 8tracks dataset is a private collection given to us for research purposes and we are not allowed to disclose it.
+According to the evaluation methodology followed in the paper, the recommender systems are implemented in "weak" and "strong" generalization. For example, MF is implemented by `mf_weak.py` and `mf_strong.py`. The only exception is Profiles, which, as is, only operates in weak mode.
 
-## Models
+## Basic usage
 
-The repository contains two main programs: `playlist_hybrid.py` and `playlist_cf.py`. The former implements our hybrid playlist continuation model. The latter is the Collaborative Filtering (CF) baseline used in the paper, based on the weighted matrix factorization algorithm introduced in [Hu et al. 2008](http://yifanhu.net/PUB/cf.pdf) and implemented in the [`implicit`](https://github.com/benfred/implicit) package.
-
-## Basic Usage
-
-The proposed model can be trained using, e.g., song features derived from listening logs:
+The proposed hybrid systems (e.g., Profiles) can be trained using any type of song feature vectors (e.g., Logs features):
 ```bash
-python playlist_hybrid.py --config config/hybrid/logs.py --fit
+python profiles_weak.py --model models/profiles/logs.py --dataset data/aotm/ --msd data/MSD/ --fit
 ```
 
-Once the model is trained, the playlist continuations it produces can be evaluated by running:
+Once the system is trained, the playlist continuations it produces can be evaluated by running:
 ```bash
-python playlist_hybrid.py --config config/hybrid/logs.py --test
+python profiles_weak.py --model models/profiles/logs.py --dataset data/aotm/ --msd data/MSD/ --test
 ```
 
-## Song-to-playlist Classifier
-
-The proposed hybrid playlist continuation model is powered by a song-to-playlist classifier that, on the basis of song features and hand-curated playlist examples, predicts if a song is a good continuation for a given playlist. The classifier is implemented in `utils/song2play.py`.
-
-Its CF counterpart is implemented in `utils/mf.py` and relies on a [slight modification of the `implicit`](https://github.com/andreuvall/implicit) package.
-
-
-## Configuration Files
-
-The model architecture, the hyperparameters and the set of song features used in different instances of the proposed hybrid model are specified through configuration files. The depth of the factorization and the hyperparameters used in the CF baseline are also specified this way.
-
-The configuration files must reside in the `config` directory, organized as follows:
+While Profiles and Membership have a similar interface, the baseline recommender systems may have different options. Details about any system implementation (e.g., about Popularity) can be obtained by running:
+```bash
+python popularity_strong.py --h
 ```
-config
- +-- cf
-      +-- wmf.py
- +-- hybrid
-      +-- ivectors_songtags.py
-      +-- ivectors.py
-      ...
+
+Importantly, note that:
+
+- Hybrid MF is implemented by `mf_weak.py` and `mf_strong.py` but using the `precomputed` option to indicate if "Audio2CF" or "Logs" features should be used instead of the song factors derived from the factorization of the playlist-song matrix.
+- Artists is implemented by `neighbors_weak.py` and `neighbors_strong.py` but passing the flag `artist`, which switches from song-level to artist-level similarities.
+- CAGH is implemented by `neighbors_weak.py` and `neighbors_strong.py` but passing the flags `artist` and `pop`, where the former switches from song-level to artist-level similarities, and the latter weights the final playlist-song scores by the song popularity.
+- Random can be evaluated by passing the flag `random` to `popularity_weak.py` and `popularity_strong.py` (the flag simply overrides the usual behavior of the scripts).
+
+## Model files
+
+Profiles, Membership, MF and Hybrid MF require model specifications regarding the number of unknowns in the systems, the song features considered, whether regularization should be used, etc. These are specified by model specification files. We suggest to place the model specification files in the `models` directory, organized as follows:
 ```
-The configuration for the CF baseline (`playlist_cf.py`) must be located in the `config/cf` subdirectory. The configuration for the proposed hybrid model (`playlist_hybrid.py`) must be located in the `config/hybrid` subdirectory.
+models
++-- profiles
+    +-- audio2cf.py
+    +-- songtags.py
+    +-- cf.py
+    ...
++-- membership
+    +-- audio2cf.py
+    +-- songtags.py
+    +-- cf.py
+    ...
++-- mf
+    +-- wmf.py
+...
+```
 
-To use a configuration file provide its path to the `--config` option of the main programs `playlist_hybrid.py` and `playlist_cf.py`.
+The model configuration files provided in the repository should reproduce the results reported in the paper.
 
-The default configuration files provided in the repository should reproduce the submission results.
+## Set up
+
+The required Python packages are listed in the `requirements.txt` file. I recommend running the dedicated script 
+```bash
+source setup_env.sh
+```
+to create a Python virtual environment and take care of the requirements. It is important to note that Profiles and Membership are implemented using [Lasagne](https://lasagne.readthedocs.io/en/latest/#) and [Theano](http://deeplearning.net/software/theano/). These libraries will likely stop evolving (see [Theano's announcement](https://groups.google.com/forum/#!msg/theano-users/7Poq8BZutbY/rNCIfvAEAwAJ)) and may require specific (older) versions of packages like [NumPy](http://www.numpy.org) or [SciPy](https://www.scipy.org/).
+
+It may also be necessary to install [pygpu](http://deeplearning.net/software/libgpuarray) for GPU support. Running the following script should manually install the package and its dependencies in the newly created virtual environment:
+```bash
+source setup_pygpu.sh
+```
 
 ## Data
 
-[Download the AotM-2011 dataset](http://www.cp.jku.at/datasets/recommendation/data_HybridPlaylistContinuation.zip). Decompress it and place the obtained `data` directory at the root level of the repository.
+The paper presents a thorough off-line evaluation conducted on two playlist datasets: the publicly available [AotM-2011](https://bmcfee.github.io/data/aotm2011.html) dataset (derived from the [Art of the Mix](http://www.artofthemix.org) platform), and a private collection that [8tracks](https://8tracks.com/) shared with us for research purposes. The playlist collections are enriched with song features derived from the publicly available [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/).
+
+We share the filtered playlists and song features corresponding to the AotM-2011 collection. We can not share any information related to the 8tracks collection. [Download the data](http://drive.jku.at/ssf/s/readFile/share/8197/5021896040269493362/publicLink/data_HybridPlaylistContinuation_.zip), decompress it, and place the obtained `data` directory at the root level of the repository.
+
+## Reproducing the results 
+
+Table 2, Figure 7a, Table 6, and part of Table 12 of the paper can be reproduced by running the dedicated script:
+```bash 
+source reproduce_results.sh
+```
+For simplicity, the script only reports the central performance values and not the confidence intervals (which can be obtained passing the flag `ci`). 
+
+The script outputs a file for each recommender system. Ideally one should become familiar with the code to properly interpret these results. Importantly, for each system, several similar-looking tables will be reported. This is because at test time we pass `0 1 2 3 4 5` to the `song_occ` option, which takes care of the following:
+
+- we first obtain the overall results (as in Table 2), then
+- we obtain the results on songs that occurred 0, 1, 2, 3, 4 or 5+ times at training time (as in Figure 7a), then
+- we obtain the results for songs that occurred 4- times at training time (as in Table 12), and finally
+- we obtain the results for songs that occurred in 1+ times at training time (that is, in-set songs, as in Table 6).
+
+This script does not reproduce all the results reported in the paper (e.g., strong generalization is missing) but it should provide enough examples to get familiar with the code, to reproduce the remaining experiments, and even to conduct new experiments.
 
 ## License
 
 The contents of this repository are licensed. See the LICENSE file for further details.
+
+## Previous versions
+
+You may have arrived to this repository following the link from our previous paper:
+
+- Andreu Vall, Hamid Eghbal-zadeh, Matthias Dorfer, Markus Schedl, and Gerhard Widmer. "Music Playlist Continuation by Learning from Hand-Curated Examples and Song Features: Alleviating the Cold-Start Problem for Rare and out-of-Set Songs." In Proc. DLRS Workshop at RecSys, 46-54. Como, Italy, 2017.
+
+The newer version of the repository encompasses the previous, and the data shared now is almost identical to that used in the previous paper (only the training/test splits in weak generalization have changed). 
+
+You can also browse the previous version of the repository (tagged as `DLRS2017`) by [clicking here](https://github.com/andreuvall/HybridPlaylistContinuation/tree/a7612175de82faae003c3b309472e85700818d05), or you can check it out by running:
+```bash
+ git checkout DLRS2017
+``` 
+
+If you do check it out, beware of the behavior of `git` [checking out tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging). 
