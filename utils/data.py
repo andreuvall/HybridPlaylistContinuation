@@ -4,9 +4,7 @@ from __future__ import print_function
 from __future__ import division
 
 from scipy import sparse
-from collections import Counter
 
-import theano
 import pandas as pd
 import numpy as np
 
@@ -14,14 +12,16 @@ import cPickle
 import os
 
 
-def load_data(data_dir, model):
+def load_data(data_dir, msd_dir, model):
     """
     Load data.
 
     Parameters
     ----------
     data_dir: str
-        Path to the data directory.
+        Path to the playlists dataset directory.
+    msd_dir: str
+        Path to the MSD directory.
     model: model file
         Indicates the song features we need to load.
 
@@ -35,13 +35,17 @@ def load_data(data_dir, model):
             Each element is a song index.
         idx2song: dict
             Mapping between song indices and song ids in the MSD.
-    split_idx: tuple
-        Indices to obtain data splits from pl_coo, namely:
+    split_weak: tuple
+        Indices to obtain horizontal splits from pl_coo, namely:
             train_idx: numpy arrays, shape (train size, )
             valid_idx: numpy arrays, shape (valid size, )
             test_idx: numpy arrays, shape (test size, )
+    split_strong: tuple
+        Indices to obtain vertical splits from pl_coo, namely:
+            train_idx: numpy arrays, shape (train size, )
+            test_idx: numpy arrays, shape (test size, )
     features: dict
-        Mapping between song ids and their feature representation.
+        Song features indexed by MSD song id.
     song2artist: dict
         Mapping between song ids in the MSD and artists.
     """
@@ -52,23 +56,27 @@ def load_data(data_dir, model):
     with open(os.path.join(data_dir, 'playlists.pkl'), 'r') as f:
         pl_coo = cPickle.load(f)
 
-    # load train/valid/test splits
-    with open(os.path.join(data_dir, 'splits.pkl'), 'r') as f:
-        split_idx = cPickle.load(f)
+    # load weak split (horizontal)
+    with open(os.path.join(data_dir, 'split_weak.pkl'), 'r') as f:
+        split_weak = cPickle.load(f)
+
+    # load strong split (vertical)
+    with open(os.path.join(data_dir, 'split_strong.pkl'), 'r') as f:
+        split_strong = cPickle.load(f)
 
     # load features
-    if model.mode is 'hybrid':
+    if hasattr(model, 'feature'):
         feat_file = os.path.join(model.feature + '.pkl')
-        with open(os.path.join(data_dir, 'song_features', feat_file), 'r') as f:
+        with open(os.path.join(data_dir, 'features', feat_file), 'r') as f:
             features = cPickle.load(f)
     else:
         features = None
 
     # load song-artists just for information
-    with open(os.path.join('data', 'MSD', 'song2artist.pkl'), 'r') as f:
+    with open(os.path.join(msd_dir, 'song2artist.pkl'), 'r') as f:
         song2artist = cPickle.load(f)
 
-    return pl_coo, split_idx, features, song2artist
+    return pl_coo, split_weak, split_strong, features, song2artist
 
 
 def compute_playlists_coo_stats(playlists_idx, songs_idx, idx2song, song2artist):
@@ -107,27 +115,24 @@ def compute_playlists_coo_stats(playlists_idx, songs_idx, idx2song, song2artist)
 
     hist_songs = pd.Series(len_playlists).describe()[['min', '25%', '50%', '75%', 'max']].tolist()
     print('\tPlaylists length:')
-    print(('\t\t{:<2}' * 5).format('min', '1q', 'med', '3q', 'max'))
-    print(('\t\t{:<2.3}' * 5).format(*hist_songs))
+    print(('\t' + '\t{}' * 5).format('min', '1q', 'med', '3q', 'max'))
+    print(('\t' + '\t{}' * 5).format(*hist_songs))
 
     hist_artists = pd.Series(art_playlists).describe()[['min', '25%', '50%', '75%', 'max']].tolist()
     print('\tPlaylists artists:')
-    print(('\t\t{:<2}' * 5).format('min', '1q', 'med', '3q', 'max'))
-    print(('\t\t{:<2.3}' * 5).format(*hist_artists))
+    print(('\t' + '\t{}' * 5).format('min', '1q', 'med', '3q', 'max'))
+    print(('\t' + '\t{}' * 5).format(*hist_artists))
 
     hist_items = pd.Series(song_occurrences).describe()[['min', '25%', '50%', '75%', 'max']].tolist()
     print('\tPlaylists per song:')
-    print(('\t\t{:<2}' * 5).format('min', '1q', 'med', '3q', 'max'))
-    print(('\t\t{:<2.3}' * 5).format(*hist_items))
+    print(('\t' + '\t{}' * 5).format('min', '1q', 'med', '3q', 'max'))
+    print(('\t' + '\t{}' * 5).format(*hist_items))
 
 
-def shape_data(playlists_idx, songs_idx, idx2song, features, mode, subset=None,
-               verbose=False):
+def shape_data(playlists_idx, songs_idx, idx2song, features, mode='test',
+               subset=None, verbose=True):
     """
-    This function prepares the data for the hybrid classifier, namely
-    the input array of song features and the target array of song-playlists.
-    In 'fit' mode we only use the songs that appear in the training split of
-    the data. In 'test' mode we use all the songs in the dataset.
+    Prepare input array of song features and target array of song-playlists.
 
     Parameters
     ----------
@@ -138,9 +143,11 @@ def shape_data(playlists_idx, songs_idx, idx2song, features, mode, subset=None,
     idx2song: dict
         Mapping between song indices and song ids in the MSD.
     features: dict
-        Mapping between song ids and their feature representation.
+        Song features indexed by MSD song id.
     mode: str
-        Either 'fit' or 'test'.
+        Either 'train' or 'test'. In 'train' mode we only use the songs that
+        appear in the training split of the data. In 'test' mode we use all
+        the songs in the dataset.
     subset: None or numpy array, shape (split size, )
         Subsets the playlists_idx and songs_idx coordinates.
     verbose: bool
@@ -164,7 +171,7 @@ def shape_data(playlists_idx, songs_idx, idx2song, features, mode, subset=None,
     num_playlists = len(np.unique(playlists_idx))
     num_songs = len(np.unique(songs_idx))
 
-    if mode == 'fit':
+    if mode == 'train':
         # use only the songs in the subset
         unique_songs = np.unique(songs_idx[subset])
     else:
@@ -186,3 +193,29 @@ def shape_data(playlists_idx, songs_idx, idx2song, features, mode, subset=None,
     Y = Y[unique_songs]
 
     return X, Y
+
+
+def show_data_splits(playlists_idx, songs_idx, idx2song, song2artist, train,
+                     valid, fit, query, cont):
+    """ Provide splits information. """
+
+    print('\nTraining split:')
+    compute_playlists_coo_stats(
+        playlists_idx[train], songs_idx[train], idx2song, song2artist
+    )
+    print('\nValidation split:')
+    compute_playlists_coo_stats(
+        playlists_idx[valid], songs_idx[valid], idx2song, song2artist
+    )
+    print('\nFit split:')
+    compute_playlists_coo_stats(
+        playlists_idx[fit], songs_idx[fit], idx2song, song2artist
+    )
+    print('\nQuery split:')
+    compute_playlists_coo_stats(
+        playlists_idx[query], songs_idx[query], idx2song, song2artist
+    )
+    print('\nContinuation split:')
+    compute_playlists_coo_stats(
+        playlists_idx[cont], songs_idx[cont], idx2song, song2artist
+    )

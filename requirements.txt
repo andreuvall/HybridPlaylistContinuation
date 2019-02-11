@@ -1,0 +1,18 @@
+backports.functools-lru-cache==1.5
+bootstrapped==0.0.2
+cycler==0.10.0
+implicit==0.3.8
+kiwisolver==1.0.1
+-e git://github.com/Lasagne/Lasagne.git@a61b76fd991f84c50acdb7bea02118899b5fefe1#egg=Lasagne
+matplotlib==2.2.3
+numpy==1.16.1
+pandas==0.24.1
+pyparsing==2.3.1
+python-dateutil==2.7.5
+pytz==2018.9
+scikit-learn==0.20.2
+scipy==1.2.0
+six==1.12.0
+subprocess32==3.5.3
+Theano==1.0.4
+tqdm==4.30.0
